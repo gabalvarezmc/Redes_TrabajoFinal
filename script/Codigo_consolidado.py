@@ -1141,6 +1141,304 @@ plt.show()
 
 # **Es probable que la categoría más visitada, "restaurant", esté asociada principalmente con destinos en ciudades como Valdivia, que concentra una gran cantidad de actividades turísticas y gastronómicas.**
 
-# #### ¿Tienen un patrón de calificación específico los usuarios más activos?
+# #### ¿Los destinos más visitados tienen mejores calificaciones promedio?
 
-# Vemos una comparación entre las calificaciones promedio de los usuarios más activos y el promedio general.
+# Relación entre calificaciones promedio y visitas por destino
+df_calif_visitas = df_base.groupby('place_name').agg(
+    calificacion_promedio=('stars', 'mean'),
+    cantidad_visitas=('stars', 'count')
+).reset_index()
+
+# Visualización
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(8, 6))
+plt.scatter(df_calif_visitas['calificacion_promedio'], df_calif_visitas['cantidad_visitas'], alpha=0.6, color='blue')
+plt.title("Relación entre Número de Visitas y Calificación Promedio")
+plt.ylabel("Cantidad de Visitas")
+plt.xlabel("Calificación Promedio")
+plt.grid(alpha=0.3)
+plt.show()
+
+
+# La mayoría de los destinos tienen un número bajo de visitas grupados en el rango de 0 a 1000. Estos destinos suelen tener calificaciones promedio distribuidas entre 3.0 y 5.0, con una tendencia más concentrada hacia calificaciones altas (≥4.5).
+# 
+# Algunos destinos con más de 5000 visitas también tienen calificaciones altas (≥4.5). Sin embargo, a medida que aumenta el número de visitas, parece haber una mayor dispersión en las calificaciones promedio y consideramos que podria ser por mayor diversidad de opiniones en destinos muy visitados o por experiencias más variadas en estos destinos.
+# 
+# Es importante recalcar que  los destinos con calificaciones promedio bajas (<3.5) tienden a tener un número relativamente bajo de visitas, lo que podría indicar que los destinos menos populares son también aquellos con experiencias menos satisfactorias.
+
+# #### ¿Algunas categorías tienen consistentemente mejores calificaciones que otras?
+
+# Calificaciones promedio por categoría
+calificaciones_por_categoria = df_base.groupby('category')['stars'].mean().reset_index()
+
+# Visualización
+plt.figure(figsize=(10, 6))
+plt.bar(calificaciones_por_categoria['category'], calificaciones_por_categoria['stars'], color='skyblue', edgecolor='black')
+plt.title("Calificaciones Promedio por Categoría")
+plt.xlabel("Categoría")
+plt.ylabel("Calificación Promedio")
+plt.xticks(rotation=90)
+plt.tight_layout()
+plt.show()
+
+
+# `Natural_feature"` y `"Tourist_attraction"` tienen calificaciones promedio cercanas a 5.0, por lo que vemos que  los destinos relacionados con naturaleza y turismo son muy valorados. **Podría estar relacionado con experiencias únicas que generan satisfacción.**
+# 
+# `"Store"`, `"Grocery_or_supermarket"`, y `"School"` tienen calificaciones promedio más bajas, lo que **podría deberse a que estas categorías no generan experiencias emocionales significativas**, ya que están más relacionadas con actividades cotidianas.
+# 
+# Las categorías relacionadas con ocio, naturaleza y turismo tienden a ser más valoradas que aquellas relacionadas con actividades funcionales o comerciales.
+
+# #### ¿Ciertas ciudades tienen calificaciones consistentemente más altas o bajas?
+
+# Calificaciones promedio por ciudad
+calificaciones_por_ciudad = df_base.groupby('city')['stars'].mean().reset_index()
+
+# Visualización
+plt.figure(figsize=(12, 6))
+plt.bar(calificaciones_por_ciudad['city'], calificaciones_por_ciudad['stars'], color='orange', edgecolor='black')
+plt.title("Calificaciones Promedio por Ciudad")
+plt.xlabel("Ciudad")
+plt.ylabel("Calificación Promedio")
+plt.xticks(rotation=90)
+plt.tight_layout()
+plt.show()
+
+
+# #### ¿Algunas categorías tienen consistentemente mejores calificaciones que otras?
+
+# Calificaciones promedio por categoría
+calificaciones_por_categoria = df_base.groupby('category')['stars'].mean().reset_index()
+
+# Visualización
+plt.figure(figsize=(10, 6))
+plt.bar(calificaciones_por_categoria['category'], calificaciones_por_categoria['stars'], color='skyblue', edgecolor='black')
+plt.title("Calificaciones Promedio por Categoría")
+plt.xlabel("Categoría")
+plt.ylabel("Calificación Promedio")
+plt.xticks(rotation=90)
+plt.tight_layout()
+plt.show()
+
+
+# `Natural_feature"` y `"Tourist_attraction"` tienen calificaciones promedio cercanas a 5.0, por lo que vemos que  los destinos relacionados con naturaleza y turismo son muy valorados. **Podría estar relacionado con experiencias únicas que generan satisfacción.**
+# 
+# `"Store"`, `"Grocery_or_supermarket"`, y `"School"` tienen calificaciones promedio más bajas, lo que **podría deberse a que estas categorías no generan experiencias emocionales significativas**, ya que están más relacionadas con actividades cotidianas.
+# 
+# Las categorías relacionadas con ocio, naturaleza y turismo tienden a ser más valoradas que aquellas relacionadas con actividades funcionales o comerciales.
+
+# #### ¿Ciertas ciudades tienen calificaciones consistentemente más altas o bajas?
+
+# Calificaciones promedio por ciudad
+calificaciones_por_ciudad = df_base.groupby('city')['stars'].mean().reset_index()
+
+# Visualización
+plt.figure(figsize=(12, 6))
+plt.bar(calificaciones_por_ciudad['city'], calificaciones_por_ciudad['stars'], color='orange', edgecolor='black')
+plt.title("Calificaciones Promedio por Ciudad")
+plt.xlabel("Ciudad")
+plt.ylabel("Calificación Promedio")
+plt.xticks(rotation=90)
+plt.tight_layout()
+plt.show()
+
+
+# #### Tendencia en el tiempo.
+
+# Cantidad de visitas por año
+visitas_por_anio = df_base.groupby('year')['place_name'].count().reset_index(name='cantidad_visitas')
+
+# Visualización
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(10, 6))
+plt.plot(visitas_por_anio['year'], visitas_por_anio['cantidad_visitas'], marker='o', linestyle='-', color='skyblue', label='Cantidad de Visitas')
+plt.title("Cantidad de Visitas por Año")
+plt.xlabel("Año")
+plt.ylabel("Cantidad de Visitas")
+plt.grid(alpha=0.3)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+
+# - Antes de 2016, la cantidad de visitas era muy baja, casi insignificante.
+# 
+# - A partir de 2016, se observa un crecimiento exponencial en la cantidad de visitas, alcanzando un máximo en 2019.
+# 
+# - En 2019, se registra el mayor número de visitas en todo el periodo analizado, con más de 80,000 visitas.
+# 
+# - En 2020, la cantidad de visitas cae significativamente. Este descenso se intuye qu eesta relacionado con la pandemia COVID-19.
+# 
+# - En 2021 y 2022, se observa una recuperación progresiva, aunque no alcanza los niveles de 2019. Esto podría deberse a una lenta reactivación del turismo tras la pandemia.
+# 
+# - En los años más recientes (2023 y 2024), parece haber una tendencia descendente nuevamente. Esto podría indicar que factores por ejemplos economicos a nivel pais pudieran estar influyendo en el turismo.
+# 
+
+# Top 3 categorías por año
+top_categorias_por_anio = df_base.groupby(['year', 'category'])['place_name'].count().reset_index(name='cantidad_visitas')
+top_categorias_por_anio = top_categorias_por_anio.sort_values(by=['year', 'cantidad_visitas'], ascending=[True, False])
+
+# Filtrar el Top 3 de categorías para cada año
+top_3_por_anio = top_categorias_por_anio.groupby('year').head(3)
+
+# Visualización
+import seaborn as sns
+
+plt.figure(figsize=(12, 8))
+sns.barplot(data=top_3_por_anio, x='year', y='cantidad_visitas', hue='category', palette='viridis')
+plt.title("Top 3 Categorías por Año")
+plt.xlabel("Año")
+plt.ylabel("Cantidad de Visitas")
+plt.legend(title='Categoría', loc='upper right')
+plt.tight_layout()
+plt.show()
+
+
+# - 2018-2019: Durante estos años de mayor actividad, las categorías "restaurant", "tourist_attraction", y "park" dominaron en términos de visitas. Esto sugiere que estas categorías son consistentes en su popularidad.
+# 
+# - En 2020, como era de esperarse, las visitas caen drásticamente en todas las categorías, debido al impacto de la pandemia de COVID-19. Las categorías más recreativas (como "restaurant" y "tourist_attraction") parecen haber sido las más afectadas.
+#   
+# - En los años posteriores (2021-2022), las visitas comienzan a recuperarse. "Restaurant" vuelve a liderar, lo que podría deberse a la reactivación del sector gastronómico. "Park" se mantiene como una de las categorías más visitadas, probablemente porque los espacios al aire libre fueron preferidos durante el periodo post-pandemia.
+# 
+# 
+# **Otras observaciones:**
+# 
+# - Aunque "restaurant" y "tourist_attraction" han sido categorías constantes en el Top 3, otras categorías, como "park" y "point_of_interest", han alternado en popularidad.
+# 
+# - Es interesante notar la aparición de categorías como "casino" y "museum" en ciertos años, lo que podría reflejar eventos específicos o preferencias locales.
+# 
+# - En 2023 y 2024, las visitas generales han disminuido en comparación con los años anteriores, pero "restaurant" sigue liderando.
+# 
+# - La categoría "park" muestra una caída significativa en comparación con su pico en 2018-2019.
+
+# ## 5. Red Bipartita
+
+# Una red bipartita tiene dos tipos de nodos: usuarios y destinos turísticos, para este caso. Los enlaces entre estos nodos representan interacciones (visitas, reviews) y tienen pesos.
+# 
+# - Nodos del primer conjunto: Usuarios (id_usuario).
+# - Nodos del segundo conjunto: Destinos turísticos (place_name)
+# 
+# **Pesos de los enlaces: Cantidad de visitas/reviews de un usuario a un destino.**
+# 
+# El objetivo en este análisis es poder modelar las interacciones de la red para poder así generar un sistema de recomendaciones para futuros usuarios.
+
+# Dado que la red es muy grande, se trabajarán 3 subconjuntos.
+
+# ### A. Subconjunto: Usuarios más activos y sus destinos favoritos
+# Objetivo: Identificar los destinos más frecuentados y bien calificados por los usuarios más activos, ya que estos representan un perfil confiable para futuras recomendaciones.
+
+# Contar la cantidad de destinos únicos visitados por cada usuario
+usuarios_activos = df_base.groupby('id_usuario')['place_name'].nunique()
+
+# Ordenar por cantidad de destinos visitados y seleccionar el top 100
+top_usuarios_activos = usuarios_activos.sort_values(ascending=False).head(100)
+
+# Mostrar el resultado
+print("Top 50 usuarios más activos y destinos únicos visitados:")
+print(top_usuarios_activos)
+
+# Visualización del top 100
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12, 6))
+top_usuarios_activos.plot(kind='bar', color='skyblue', edgecolor='black')
+plt.title("Top 50 Usuarios Más Activos")
+plt.xlabel("ID de Usuario")
+plt.ylabel("Cantidad de Destinos Únicos Visitados")
+plt.xticks(rotation=90, fontsize=8)
+plt.tight_layout()
+plt.show()
+
+
+# Filtrar usuarios que han visitado más de 45 destinos únicos
+usuarios_activos = df_base.groupby('id_usuario')['place_name'].nunique()
+usuarios_activos = usuarios_activos[usuarios_activos > 45].index
+
+# Crear el subconjunto de datos
+subconjunto_usuarios_activos = df_base[df_base['id_usuario'].isin(usuarios_activos)]
+
+print(f"Total de usuarios más activos: {len(usuarios_activos)}")
+print(f"Total de filas en el subconjunto: {subconjunto_usuarios_activos.shape[0]}")
+
+
+import networkx as nx
+
+# Crear un grafo bipartito
+B = nx.Graph()
+
+# Agregar nodos de usuarios y destinos
+usuarios = subconjunto_usuarios_activos['id_usuario'].unique()
+destinos = subconjunto_usuarios_activos['place_name'].unique()
+
+B.add_nodes_from(usuarios, bipartite=0, tipo='usuario')  # Nodos de tipo 'usuario'
+B.add_nodes_from(destinos, bipartite=1, tipo='destino')  # Nodos de tipo 'destino'
+
+# Agregar enlaces con pesos según el número de visitas
+for _, row in subconjunto_usuarios_activos.iterrows():
+    usuario = row['id_usuario']
+    destino = row['place_name']
+    if B.has_edge(usuario, destino):
+        B[usuario][destino]['weight'] += 1
+    else:
+        B.add_edge(usuario, destino, weight=1)
+
+# Resumen de la red
+print(f"Número total de nodos: {len(B.nodes)}")
+print(f"Número total de enlaces: {len(B.edges)}")
+
+
+# **Datos generales de la red bipartita:**
+# 
+# - Usuarios más activos considerados: 107 usuarios que han visitado al menos un número significativo de destinos (más de 45).
+# - Destinos: 864 destinos únicos en el subconjunto.
+# - Total de filas: 6.221 conexiones en el subconjunto.
+# - Número de nodos: 971 (usuarios + destinos).
+# - Número de enlaces: 6.215 conexiones entre usuarios y destinos.
+
+# La red tiene una gran cantidad de nodos y enlaces que es demasiado grande para representarla gráficamente sin filtrar.
+# Por este motivo, es que exploraremos los destinos más visitados y crearemos una subred más manejable para poder entender tendencias y patrones.
+
+# Top destinos más visitados (grado más alto)
+top_destinos = sorted(
+    [(nodo, grado) for nodo, grado in B.degree() if B.nodes[nodo]['tipo'] == 'destino'],
+    key=lambda x: x[1],
+    reverse=True
+)[:10]
+
+print("Top 10 destinos más visitados en la red bipartita:")
+for destino, conexiones in top_destinos:
+    print(f"{destino}: {conexiones} conexiones")
+
+
+# Se filtran los nodos más relevantes para trabajar una subred:
+
+# Filtrar nodos con grado mayor a un umbral 
+umbral_grado = 50
+nodos_relevantes = [n for n, grado in B.degree() if grado > umbral_grado]
+subred = B.subgraph(nodos_relevantes)
+
+# Crear posición específica para nodos bipartitos
+usuarios = [n for n, d in subred.nodes(data=True) if d['tipo'] == 'usuario']
+destinos = [n for n, d in subred.nodes(data=True) if d['tipo'] == 'destino']
+pos = nx.bipartite_layout(subred, usuarios)
+
+# Diferenciar nodos por tipo (colores)
+node_colors = ['blue' if n in usuarios else 'orange' for n in subred.nodes()]
+
+# Visualización
+plt.figure(figsize=(14, 10))
+nx.draw(
+    subred,
+    pos,
+    with_labels=False,
+    node_size=20,
+    node_color=node_colors,
+    edge_color='gray',
+    alpha=0.7
+)
+plt.title("Red Bipartita: Usuarios y Destinos Relevantes")
+plt.show()
+
+
+# El gráfico muestra una red bipartita donde los nodos azules representan a los usuarios más activos (top 50) y los nodos naranjas representan los destinos que han visitado. Cada línea (enlace) indica una relación entre un usuario y un destino, basada en las visitas registradas.
