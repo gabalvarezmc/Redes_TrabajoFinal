@@ -87,6 +87,7 @@ from nltk import word_tokenize
 import re
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
+import networkx as nx
 
 
 # ## 1. Análisis Exploratorio de Datos:
@@ -124,7 +125,7 @@ print('Cantidad de Lugares: '+ str(len(df_base['place_id'].unique())))
 print('Cantidad de usuarios únicos: '+str(len(df_base['id_usuario'].unique())))
 
 
-# En esta base de datos encontramos **479,343 reviews**, de las cuales obtenemos **233,588** reviews con comentarios y **245,755** reviews solo con valoración de estrellas (sin comentarios). Los usuarios únicos son **205,836** y los lugares valorizados en Google Maps son **1,390**.  
+# En esta base de datos se encuentra **479,343 reviews**, de las cuales se tiene **233,588** reviews con comentarios y **245,755** reviews solo con valoración de estrellas (sin comentarios). Los usuarios únicos son **205,836** y los lugares valorizados en Google Maps son **1,390**.  
 # 
 # - **Cantidad de Reviews**: 479,343  
 # - **Cantidad de Comentarios**: 233,588  
@@ -266,7 +267,7 @@ df_base.head()
 
 
 # Guardar el DataFrame en un archivo Excel
-df_base.to_excel("./data/reviews_Los_Rios.xlsx", index=False)
+# df_base.to_excel("./data/reviews_Los_Rios.xlsx", index=False)
 
 print("El nuevo dataset se ha guardado como 'reviews_Los_Rios.xlsx'.")
 
@@ -405,9 +406,7 @@ print(df_base[['types', 'category', 'type', 'subtype']].head())
 df_base.head()
 
 
-# ## 4. Análisis Exploratorio:
-
-import matplotlib.pyplot as plt
+# ## 4. Análisis de patrones
 
 # Agrupar por 'year' y contar la cantidad de registros (reviews) por año
 reviews_per_year = df_base.groupby('year').size().reset_index(name='review')
@@ -428,6 +427,7 @@ plt.tight_layout()
 # Mostrar la gráfica
 plt.show()
 
+# Poner % en las barras!!
 
 
 # Visualizamos la cantidad de reviews existentes por cada categoría, donde el ranking top 10 es el siguiente:
@@ -662,7 +662,40 @@ print(reviews_por_destino.describe())
 # 
 # Podemos ver que la distribución de reviews por destino es altamente desigual: algunos destinos son extremadamente populares (outliers), mientras que muchos reciben pocas visitas o calificaciones.
 
-import matplotlib.pyplot as plt
+# Top 10 destinos más visitados con porcentaje
+top_destinos = df_base['place_name'].value_counts().head(10)
+total_visitas = df_base['place_name'].value_counts().sum()
+
+# Agregar porcentaje al Top 10
+top_destinos_porcentaje = top_destinos.apply(lambda x: (x / total_visitas) * 100)
+
+# Mostrar resultados
+print("\nTop 10 destinos más visitados con porcentaje del total:")
+top_destinos_con_porcentaje = pd.DataFrame({
+    'Destino': top_destinos.index,
+    'Visitas': top_destinos.values,
+    'Porcentaje (%)': top_destinos_porcentaje.values
+})
+print(top_destinos_con_porcentaje)
+
+# Top 10 usuarios con más reviews
+top_usuarios = df_base['id_usuario'].value_counts().head(10)
+total_reviews = df_base['id_usuario'].value_counts().sum()
+
+# Agregar porcentaje al Top 10
+top_usuarios_porcentaje = top_usuarios.apply(lambda x: (x / total_reviews) * 100)
+
+# Mostrar resultados
+print("\nTop 10 usuarios con más reviews con porcentaje del total:")
+top_usuarios_con_porcentaje = pd.DataFrame({
+    'Usuario': top_usuarios.index,
+    'Reviews': top_usuarios.values,
+    'Porcentaje (%)': top_usuarios_porcentaje.values
+})
+print(top_usuarios_con_porcentaje)
+
+
+
 
 plt.figure(figsize=(10, 6))
 plt.barh(top_destinos_con_porcentaje['Destino'], top_destinos_con_porcentaje['Visitas'], color='skyblue', edgecolor='black')
@@ -767,39 +800,6 @@ top_usuarios_con_porcentaje = pd.DataFrame({
 })
 print(top_usuarios_con_porcentaje)
 
-
-
-
-plt.figure(figsize=(10, 6))
-plt.barh(top_destinos_con_porcentaje['Destino'], top_destinos_con_porcentaje['Visitas'], color='skyblue', edgecolor='black')
-plt.xlabel('Número de Visitas')
-plt.ylabel('Destinos')
-plt.title('Top 10 Destinos Más Visitados')
-plt.gca().invert_yaxis()  # Colocar el destino más popular arriba
-plt.tight_layout()
-
-# Mostrar porcentajes en las barras
-for i, (visitas, porcentaje) in enumerate(zip(top_destinos_con_porcentaje['Visitas'], top_destinos_con_porcentaje['Porcentaje (%)'])):
-    plt.text(visitas + 50, i, f"{porcentaje:.2f}%", va='center')
-
-plt.show()
-
-
-
-# Gráfico de barras horizontales para usuarios con más reviews
-plt.figure(figsize=(10, 6))
-plt.barh(top_usuarios_con_porcentaje['Usuario'], top_usuarios_con_porcentaje['Reviews'], color='lightcoral', edgecolor='black')
-plt.xlabel('Número de Reviews')
-plt.ylabel('Usuarios')
-plt.title('Top 10 Usuarios Más Activos')
-plt.gca().invert_yaxis()  # Colocar el usuario más activo arriba
-plt.tight_layout()
-
-# Mostrar porcentajes en las barras
-for i, (reviews, porcentaje) in enumerate(zip(top_usuarios_con_porcentaje['Reviews'], top_usuarios_con_porcentaje['Porcentaje (%)'])):
-    plt.text(reviews + 2, i, f"{porcentaje:.2f}%", va='center')
-
-plt.show()
 
 
 
@@ -993,6 +993,8 @@ plt.tight_layout()
 plt.show()
 
 
+# De estos graficos y los anteriormente presentados se puede observar que hay una baja coocurrencia de los lugares con mayor cantidad de reviews y los con mejor calificación, esto implica que las notas de estos lugares se encuentran infladas en base a la baja cantidad de reviews que tienen.
+
 # #### ¿Qué ciudad visitan los usuarios más activos?
 
 ciudades_por_usuario = destinos_usuarios_activos.groupby(['id_usuario', 'city']).size().reset_index(name='conteo')
@@ -1048,18 +1050,42 @@ print("Calificaciones bajas y altas por usuario:")
 print(calificaciones_extremas)
 
 # Visualizar proporción de calificaciones extremas
-calificaciones_extremas.plot(
+ax = calificaciones_extremas.plot(
     x='id_usuario',
     kind='bar',
     stacked=True,
-    figsize=(10, 6),
+    figsize=(12, 7),
     color=['salmon', 'skyblue'],
     edgecolor='black'
 )
+for i, patch in enumerate(ax.patches):
+    if i % 2 == 0:
+        patch.set_facecolor('salmon')  # Set the color for Column 1
+    else:
+        patch.set_facecolor('skyblue') 
+
+# Añadir símbolos y leyenda con explicación
+for bar, label, symbol in zip(ax.patches, ['Bajas', 'Altas'], ['↓', '↑']):
+    height = bar.get_height()
+    if height > 0:  # Añadir solo para barras visibles
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() / 2,  # Centro de la barra
+            f"{symbol}",
+            ha='center',
+            va='center',
+            fontsize=10,
+            color='white'
+        )
+
+# Personalizar el gráfico
 plt.title("Calificaciones Extremas por Usuario")
 plt.ylabel("Cantidad de Calificaciones")
 plt.xlabel("Usuarios")
-plt.legend(["Calificaciones Bajas (<= 2)", "Calificaciones Altas (>= 4)"])
+plt.legend(
+    ["Calificaciones Bajas (<= 2)", "Calificaciones Altas (>= 4)"],
+    loc='upper right'
+)
 plt.tight_layout()
 plt.show()
 
@@ -1118,26 +1144,6 @@ plt.gca().invert_yaxis()
 plt.tight_layout()
 plt.show()
 
-# Contar calificaciones altas por destino
-calificaciones_bajas_por_destino = calificaciones_bajas.groupby('place_name').size().reset_index(name='conteo')
-
-# Ordenar por número de calificaciones bajas
-calificaciones_bajas_por_destino = calificaciones_bajas_por_destino.sort_values(by='conteo', ascending=False).head(10)
-
-# Mostrar los resultados
-print("Destinos con más calificaciones bajas:")
-print(calificaciones_bajas_por_destino)
-
-# Visualizar
-plt.figure(figsize=(10, 6))
-plt.barh(calificaciones_bajas_por_destino['place_name'], calificaciones_bajas_por_destino['conteo'], color='lightcoral', edgecolor='black')
-plt.title("Top 10 Destinos con Calificaciones Bajas")
-plt.xlabel("Cantidad de Calificaciones Bajas")
-plt.ylabel("Destinos")
-plt.gca().invert_yaxis()
-plt.tight_layout()
-plt.show()
-
 
 # **Es probable que la categoría más visitada, "restaurant", esté asociada principalmente con destinos en ciudades como Valdivia, que concentra una gran cantidad de actividades turísticas y gastronómicas.**
 
@@ -1166,11 +1172,13 @@ plt.show()
 # Algunos destinos con más de 5000 visitas también tienen calificaciones altas (≥4.5). Sin embargo, a medida que aumenta el número de visitas, parece haber una mayor dispersión en las calificaciones promedio y consideramos que podria ser por mayor diversidad de opiniones en destinos muy visitados o por experiencias más variadas en estos destinos.
 # 
 # Es importante recalcar que  los destinos con calificaciones promedio bajas (<3.5) tienden a tener un número relativamente bajo de visitas, lo que podría indicar que los destinos menos populares son también aquellos con experiencias menos satisfactorias.
+# 
+# Esto siempre asumiendo el caso promedio, puesto que siempre existiran outliers con alto flujo de visitas pero bajo de reviews, por ejemplo tiendas de comida rapida, mcdonals, BK, etc.
 
 # #### ¿Algunas categorías tienen consistentemente mejores calificaciones que otras?
 
 # Calificaciones promedio por categoría
-calificaciones_por_categoria = df_base.groupby('category')['stars'].mean().reset_index()
+calificaciones_por_categoria = df_base.groupby('category')['stars'].mean().reset_index().sort_values(by='stars', ascending=False)
 
 # Visualización
 plt.figure(figsize=(10, 6))
@@ -1192,29 +1200,13 @@ plt.show()
 # #### ¿Ciertas ciudades tienen calificaciones consistentemente más altas o bajas?
 
 # Calificaciones promedio por ciudad
-calificaciones_por_ciudad = df_base.groupby('city')['stars'].mean().reset_index()
+calificaciones_por_ciudad = df_base.groupby('city')['stars'].mean().reset_index().sort_values(by='stars', ascending=False)
 
 # Visualización
 plt.figure(figsize=(12, 6))
 plt.bar(calificaciones_por_ciudad['city'], calificaciones_por_ciudad['stars'], color='orange', edgecolor='black')
 plt.title("Calificaciones Promedio por Ciudad")
 plt.xlabel("Ciudad")
-plt.ylabel("Calificación Promedio")
-plt.xticks(rotation=90)
-plt.tight_layout()
-plt.show()
-
-
-# #### ¿Algunas categorías tienen consistentemente mejores calificaciones que otras?
-
-# Calificaciones promedio por categoría
-calificaciones_por_categoria = df_base.groupby('category')['stars'].mean().reset_index()
-
-# Visualización
-plt.figure(figsize=(10, 6))
-plt.bar(calificaciones_por_categoria['category'], calificaciones_por_categoria['stars'], color='skyblue', edgecolor='black')
-plt.title("Calificaciones Promedio por Categoría")
-plt.xlabel("Categoría")
 plt.ylabel("Calificación Promedio")
 plt.xticks(rotation=90)
 plt.tight_layout()
@@ -1226,22 +1218,6 @@ plt.show()
 # `"Store"`, `"Grocery_or_supermarket"`, y `"School"` tienen calificaciones promedio más bajas, lo que **podría deberse a que estas categorías no generan experiencias emocionales significativas**, ya que están más relacionadas con actividades cotidianas.
 # 
 # Las categorías relacionadas con ocio, naturaleza y turismo tienden a ser más valoradas que aquellas relacionadas con actividades funcionales o comerciales.
-
-# #### ¿Ciertas ciudades tienen calificaciones consistentemente más altas o bajas?
-
-# Calificaciones promedio por ciudad
-calificaciones_por_ciudad = df_base.groupby('city')['stars'].mean().reset_index()
-
-# Visualización
-plt.figure(figsize=(12, 6))
-plt.bar(calificaciones_por_ciudad['city'], calificaciones_por_ciudad['stars'], color='orange', edgecolor='black')
-plt.title("Calificaciones Promedio por Ciudad")
-plt.xlabel("Ciudad")
-plt.ylabel("Calificación Promedio")
-plt.xticks(rotation=90)
-plt.tight_layout()
-plt.show()
-
 
 # #### Tendencia en el tiempo.
 
@@ -1286,7 +1262,7 @@ top_3_por_anio = top_categorias_por_anio.groupby('year').head(3)
 import seaborn as sns
 
 plt.figure(figsize=(12, 8))
-sns.barplot(data=top_3_por_anio, x='year', y='cantidad_visitas', hue='category', palette='viridis')
+sns.barplot(data=top_3_por_anio, x='year', y='cantidad_visitas', hue='category', palette='tab10')
 plt.title("Top 3 Categorías por Año")
 plt.xlabel("Año")
 plt.ylabel("Cantidad de Visitas")
@@ -1323,7 +1299,105 @@ plt.show()
 # 
 # El objetivo en este análisis es poder modelar las interacciones de la red para poder así generar un sistema de recomendaciones para futuros usuarios.
 
-# Dado que la red es muy grande, se trabajarán 3 subconjuntos.
+usuarios = df_base.groupby('id_usuario').agg(count=('place_id','count')).reset_index()
+usuarioslista = list(usuarios['id_usuario'][usuarios['count']>1])
+red_datos =df_base[df_base['id_usuario'].isin(usuarioslista)]  
+
+
+# Se considerará pa la información del id del usduario y del lugar
+red_datos =red_datos[['id_usuario','place_id']]
+#Todas las combinaciones del cliente (primera columna) y las distintas combinaciones de lugares i y j
+red_datos = red_datos.merge(red_datos, on='id_usuario', how='outer')
+red_datos.columns = [0,'i', 'j'] 
+df_agg = red_datos.groupby(['i', 'j']).agg(pairs =('j','count')) # recordar que están duplicados
+
+
+
+#Generamos la lista de nodos para diferenciar cada lugar, Con esto obtenemos un ID distintivo para cada lugar
+nodes = pd.concat([df_agg.reset_index()['i'], df_agg.reset_index()['j']]).drop_duplicates().sort_values()\
+        .to_frame('lugar').reset_index(drop=True).reset_index().rename(columns={'index' : 'id'})
+
+
+# Lista de Coocurrencia
+# Pasamos a trabajar sobre los IDs generados en el punto anterior
+list_cooc = (df_agg.reset_index().merge(nodes[['lugar','id']], left_on='i', right_on='lugar')
+            .drop(columns=['i', 'lugar']).rename(columns={'id' : 'i'})
+            .merge(nodes[['lugar', 'id']], left_on='j', right_on='lugar')
+            .drop(columns=['j', 'lugar']).rename(columns={'id' : 'j'})
+            [['i', 'j', 'pairs']].sort_values(['i', 'j']))
+
+# Se filtran todos los pesos con valor 0
+list_cooc_2 = list_cooc[list_cooc['pairs']>0]
+
+
+W = nx.Graph()
+for row in list_cooc_2.itertuples():
+    W.add_edge(row.i, row.j, weight=row.pairs)
+
+
+nx.write_gexf(W, "Red_sin_Filtrar.gexf")
+
+
+dict10=dict(W.degree())  # node 0 has degree 1
+sorted_dict0 = {}
+sorted_keys0 = sorted(dict10, key=dict10.get)  # [1, 3, 2]
+
+for w in sorted_keys0:
+    sorted_dict0[w] = dict10[w]
+sorted_dict0
+
+
+fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+
+values = list(sorted_dict0.values())
+n, bins, patches = plt.hist(values, bins=90, facecolor='#2ab0ff', edgecolor='#e0e0e0', linewidth=0.5, alpha=0.7)
+
+n = n.astype('int') # it MUST be integer
+# Good old loop. Choose colormap of your taste
+for i in range(len(patches)):
+    patches[i].set_facecolor(plt.cm.viridis(n[i]/max(n)))
+# Make one bin stand out   
+patches[47].set_alpha(1) # Set opacity
+# Add title and labels with custom font sizes
+plt.title('Distribución de grado de la Red', fontsize=12)
+plt.xlabel('Grado', fontsize=20)
+plt.ylabel('Cantidad de Nodos', fontsize=20)
+ax.set_title("Distribución de Grado de la Red",
+             pad=24, fontweight=700, fontsize=20)
+plt.show()
+
+
+#F0.edges(data=True)
+N10 = len(W)
+L10 = W.size()
+degrees10 = list(dict(W.degree()).values())
+kmin10 = min(degrees10)
+kmax10 = max(degrees10)
+print("Número de nodos: ", N10)
+print("Número de enlaces: ", L10)
+print('-------')
+print("Grado promedio: ", 2*L10/N10) 
+print('-------')
+print("Grado mínimo: ", kmin10)
+print("Grado máximo: ", kmax10)
+print('-------')
+print('Densidad: ', nx.density(W))
+print('Diametro: ',nx.diameter(W))
+
+nx.draw_networkx(W)
+
+
+d = {}
+for i, j in dict(nx.degree(W)).items():
+    if j in d:
+        d[j] += 1
+    else:
+        d[j] = 1
+x = np.log10(list((d.keys())))
+y = np.log10(list(d.values()))
+plt.scatter(x, y, alpha=0.9)
+plt.show()
+
 
 # ### A. Subconjunto: Usuarios más activos y sus destinos favoritos
 # Objetivo: Identificar los destinos más frecuentados y bien calificados por los usuarios más activos, ya que estos representan un perfil confiable para futuras recomendaciones.
@@ -1442,3 +1516,157 @@ plt.show()
 
 
 # El gráfico muestra una red bipartita donde los nodos azules representan a los usuarios más activos (top 50) y los nodos naranjas representan los destinos que han visitado. Cada línea (enlace) indica una relación entre un usuario y un destino, basada en las visitas registradas.
+
+# Filtrar enlaces con peso mayor a 24
+proyeccion_usuarios = nx.bipartite.weighted_projected_graph(B, usuarios)
+umbral_peso = 24
+proyeccion_filtrada = nx.Graph(
+    (u, v, d) for u, v, d in proyeccion_usuarios.edges(data=True) if d['weight'] > umbral_peso
+)
+
+# Visualizar la red proyectada filtrada
+plt.figure(figsize=(12, 8))
+pos = nx.spring_layout(proyeccion_filtrada, seed=42)
+nx.draw(
+    proyeccion_filtrada,
+    pos,
+    with_labels=False,
+    node_size=25,
+    node_color='blue',
+    edge_color='gray',
+    alpha=0.7,
+    width=[d['weight'] * 0.1 for (u, v, d) in proyeccion_filtrada.edges(data=True)]
+)
+plt.title("Proyección Unimodal Filtrada: Relación entre Usuarios")
+plt.show()
+
+
+# Calcular grado de los nodos
+grados = dict(proyeccion_filtrada.degree())
+# Ordenar por grado descendente
+grados_ordenados = sorted(grados.items(), key=lambda x: x[1], reverse=True)
+print("Top 10 nodos con mayor grado:")
+for nodo, grado in grados_ordenados[:10]:
+    print(f"Usuario: {nodo}, Grado: {grado}")
+
+
+# El top 10 de nodos con mayor grado son los usuarios que comparten destinos con más personas. Estos usuarios corresponden a los "hubs" sociales, visitando destinos populares que conectan a varias personas.
+
+# **CENTRALIDAD DE INTERMEDIACIÒN**
+
+# Calcular centralidad de intermediación
+intermediacion = nx.betweenness_centrality(proyeccion_filtrada)
+# Ordenar por centralidad descendente
+intermediacion_ordenada = sorted(intermediacion.items(), key=lambda x: x[1], reverse=True)
+print("Top 10 nodos por centralidad de intermediación:")
+for nodo, valor in intermediacion_ordenada[:10]:
+    print(f"Usuario: {nodo}, Centralidad: {valor:.4f}")
+
+
+# La centralidad de intermediación mide cuántas veces pasa un nodo por los caminos más cortos entre otros nodos. Identifica nodos clave para la estructura de la red. Estos usuarios con alta centralidad de intermediación actúan como puentes entre diferentes grupos de usuarios con destinos comunes.
+
+# **COMUNIDADES**
+
+from networkx.algorithms.community import greedy_modularity_communities
+
+# Detección de comunidades
+comunidades = list(greedy_modularity_communities(proyeccion_filtrada))
+print(f"Se identificaron {len(comunidades)} comunidades.")
+for i, comunidad in enumerate(comunidades[:5]):  # Mostrar las 5 comunidades más grandes
+    print(f"Comunidad {i+1}: {len(comunidad)} nodos")
+
+
+from matplotlib import cm
+import numpy as np
+
+colores = cm.rainbow(np.linspace(0, 1, len(comunidades)))
+color_map = {}
+for i, comunidad in enumerate(comunidades):
+    for nodo in comunidad:
+        color_map[nodo] = colores[i]
+
+# Dibujar red con colores para cada comunidad
+plt.figure(figsize=(12, 8))
+nx.draw(
+    proyeccion_filtrada,
+    pos,
+    with_labels=False,
+    node_size=50,
+    node_color=[color_map[nodo] for nodo in proyeccion_filtrada.nodes],
+    edge_color='gray',
+    alpha=0.7
+)
+plt.title("Comunidades en la Red Unimodal de Usuarios")
+plt.show()
+
+
+# Las comunidades reflejan usuarios que tienden a visitar destinos comunes o que comparten intereses específicos.
+# 
+# Es importante notar que su bien las comunidades estan separadas existen usuarios que funcionan como puente entre las distintas comunides, estos usuarios tienden a realizar reviews de diversos destinos turisticos.
+
+# Obtener enlaces con mayor peso
+pesos = nx.get_edge_attributes(proyeccion_filtrada, 'weight')
+pesos_ordenados = sorted(pesos.items(), key=lambda x: x[1], reverse=True)
+print("Top 10 enlaces por peso:")
+for (nodo1, nodo2), peso in pesos_ordenados[:10]:
+    print(f"Enlace: {nodo1} - {nodo2}, Peso: {peso}")
+
+
+# Las conexiones más fuertes reflejan pares de usuarios que frecuentan destinos similares, lo que sugiere afinidades en preferencias de viaje. Este dato podría ser utilizado para recomendaciones colaborativas.
+
+from community import community_louvain
+
+# Detectar comunidades en la red unimodal filtrada
+particion = community_louvain.best_partition(proyeccion_filtrada)
+
+# Mostrar un ejemplo de cómo luce la partición
+print(list(particion.items())[:5])  # Muestra los primeros 5 nodos con sus comunidades
+
+
+# Asociar comunidades a usuarios
+df_comunidades = pd.DataFrame({'id_usuario': list(particion.keys()), 'comunidad': list(particion.values())})
+
+# Unir datos de comunidad con el dataframe original
+df_comunidades_merge = pd.merge(df_base, df_comunidades, on='id_usuario')
+
+# Categorías predominantes por comunidad
+categorias_por_comunidad = df_comunidades_merge.groupby(['comunidad', 'category'])['place_name'].count().reset_index(name='conteo')
+
+# Calcular el porcentaje de visitas por categoría dentro de cada comunidad
+categorias_por_comunidad['porcentaje'] = categorias_por_comunidad.groupby('comunidad')['conteo'].transform(lambda x: (x / x.sum()) * 100)
+
+# Mostrar los resultados para las primeras comunidades
+print(categorias_por_comunidad.sort_values(['comunidad', 'conteo'], ascending=[True, False]).head(10))
+
+
+# Calificaciones promedio por comunidad
+calificaciones_por_comunidad = df_comunidades_merge.groupby('comunidad')['stars'].mean().reset_index()
+calificaciones_por_comunidad.rename(columns={'stars': 'calificacion_promedio'}, inplace=True)
+
+# Visualización
+plt.figure(figsize=(10, 6))
+sns.barplot(data=calificaciones_por_comunidad, x='comunidad', y='calificacion_promedio')
+plt.title("Calificación Promedio por Comunidad")
+plt.xlabel("Comunidad")
+plt.ylabel("Calificación Promedio")
+plt.xticks(rotation=0)
+plt.show()
+
+
+# En base a la comunidad a la que pertenece cada usuario se crea un sistema de recomendacion de destinos turisticos que no han sido visitados.
+
+# Obtener destinos más visitados por cada comunidad
+destinos_por_comunidad = df_comunidades_merge.groupby(['comunidad', 'place_name'])['id_usuario'].count().reset_index(name='conteo')
+destinos_por_comunidad = destinos_por_comunidad.sort_values(['comunidad', 'conteo'], ascending=[True, False])
+
+# Crear una lista de recomendaciones para cada usuario
+recomendaciones = {}
+for usuario, comunidad in df_comunidades.values:
+    destinos_visitados = df_base[df_base['id_usuario'] == usuario]['place_name'].unique()
+    destinos_comunidad = destinos_por_comunidad[destinos_por_comunidad['comunidad'] == comunidad]['place_name']
+    recomendaciones[usuario] = list(set(destinos_comunidad) - set(destinos_visitados))
+
+# Mostrar recomendaciones para los primeros 5 usuarios
+for usuario, destinos in list(recomendaciones.items())[:5]:
+    print(f"Usuario {usuario}: Recomendaciones: {destinos[:5]}")
+
