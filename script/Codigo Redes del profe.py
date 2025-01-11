@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 
-df_base = pd.read_excel("./Redes_coocurrencia.xlsx").reset_index()
+df_base = pd.read_excel("./consolidado_reviews_Los_Rios_conINFO.xlsx").reset_index()
 df_base = df_base.rename({'index':'Id'}, axis='columns')
 
 
