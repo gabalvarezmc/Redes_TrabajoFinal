@@ -4,3 +4,7 @@ matplotlib
 openpyxl
 requests
 scipy
+geopandas
+community
+tqdm
+python-louvain
