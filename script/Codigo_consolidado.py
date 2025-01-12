@@ -1282,7 +1282,9 @@ plt.show()
 # 
 # - La categoría "park" muestra una caída significativa en comparación con su pico en 2018-2019.
 
-# ## 5. Red Bipartita
+# ## 5. Descubrimiento y Análisis de Patrones
+
+# ### Red Bipartita
 
 # Una red bipartita tiene dos tipos de nodos: usuarios y destinos turísticos, para este caso. Los enlaces entre estos nodos representan interacciones (visitas, reviews) y tienen pesos.
 # 
@@ -1419,7 +1421,7 @@ n = n.astype('int') # it MUST be integer
 for i in range(len(patches)):
     patches[i].set_facecolor(plt.cm.viridis(n[i]/max(n)))
 # Make one bin stand out   
-patches[47].set_alpha(1) # Set opacity
+# patches[47].set_alpha(1) # Set opacity
 # Add title and labels with custom font sizes
 plt.title('Distribución de grado de la Red', fontsize=12)
 plt.xlabel('Grado', fontsize=20)
@@ -1446,7 +1448,7 @@ print('-------')
 print('Densidad: ', nx.density(W))
 print('Diametro: ',nx.diameter(W))
 
-nx.draw_networkx(W)
+nx.draw_networkx(W, node_size=10, edge_color='gray', with_labels=False)
 
 
 d = {}
@@ -1647,7 +1649,7 @@ print('-------')
 print('Densidad: ', nx.density(proyeccion_filtrada))
 print('Diametro: ',nx.diameter(proyeccion_filtrada))
 
-nx.draw_networkx(proyeccion_filtrada)
+nx.draw_networkx(proyeccion_filtrada, node_size=20, edge_color='gray', with_labels=False)
 
 
 # **CENTRALIDAD DE INTERMEDIACIÓN**
@@ -1748,6 +1750,69 @@ plt.title("Calificación Promedio por Comunidad")
 plt.xlabel("Comunidad")
 plt.ylabel("Calificación Promedio")
 plt.xticks(rotation=0)
+plt.show()
+
+
+def agrupar_categorias_principales(df, comunidad, top_n=4):
+
+    # Filtrar el DataFrame para la comunidad especificada
+    grupo = df[df['comunidad'] == comunidad]
+    
+    # Obtener las N categorías principales por porcentaje
+    categorias_principales = grupo.nlargest(top_n, 'porcentaje')
+    
+    # Calcular los valores agregados para 'otros'
+    porcentaje_otros = grupo[~grupo.index.isin(categorias_principales.index)]['porcentaje'].sum()
+    conteo_otros = grupo[~grupo.index.isin(categorias_principales.index)]['conteo'].sum()
+    
+    # Convertir las categorías principales a registros
+    resultado = categorias_principales.to_dict('records')
+    
+    # Agregar la categoría 'otros' si es aplicable
+    if porcentaje_otros > 0:
+        resultado.append({
+            'comunidad': comunidad,
+            'category': 'otros',
+            'conteo': conteo_otros,
+            'porcentaje': porcentaje_otros
+        })
+    
+    # Convertir el resultado nuevamente a un DataFrame
+    return pd.DataFrame(resultado)
+
+
+df_aux = categorias_por_comunidad.sort_values(['comunidad', 'conteo'], ascending=[True, False])
+resultados = []
+    
+for i in range(5):
+    df_procesado = agrupar_categorias_principales(df_aux, i, 4)
+    resultados.append(df_procesado)
+    
+df_aux = pd.concat(resultados, ignore_index=True)
+
+
+# Pivot the data for stacked bar chart
+pivot_df = df_aux.pivot_table(index='comunidad', columns='category', values='porcentaje', fill_value=0)
+
+# Plot stacked bar chart
+fig, ax = plt.subplots(figsize=(16, 8))
+
+pivot_df.plot(
+    kind='bar',
+    stacked=True,
+    ax=ax,
+    colormap='Spectral',  # Choose a colormap for better differentiation
+    alpha=1
+)
+
+# Add labels, title, and legend
+ax.set_title("Distribucion de categorias por comunidad", fontsize=20, pad=20, fontweight='bold')
+ax.set_xlabel("Comunidad", fontsize=16)
+ax.set_ylabel("Porcentaje", fontsize=16)
+ax.legend(title="Categoria", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
+plt.tight_layout()
+
+# Show the plot
 plt.show()
 
 
@@ -1899,26 +1964,6 @@ S = [G.subgraph(c).copy() for c in nx.connected_components(G)]
 
 
 
-valores = [value[1] for value in grados_ordenados]
-
-fig, ax = plt.subplots(1, 1, figsize=(16, 8))
-
-n, bins, patches = plt.hist(valores, bins=90, facecolor='#2ab0ff', edgecolor='#e0e0e0', linewidth=0.5, alpha=0.7)
-
-n = n.astype('int') # it MUST be integer
-# Good old loop. Choose colormap of your taste
-for i in range(len(patches)):
-    patches[i].set_facecolor(plt.cm.viridis(n[i]/max(n)))
-# Make one bin stand out   
-patches[47].set_alpha(1) # Set opacity
-# Add title and labels with custom font sizes
-plt.title('Distribución de grado de la Red ', fontsize=12)
-plt.xlabel('Grado', fontsize=20)
-plt.ylabel('Cantidad de Nodos', fontsize=20)
-ax.set_title("Distribución de Grado de la Red Filtrada por peso",
-             pad=24, fontweight=700, fontsize=20)
-
-
 # Filtered
 F = S[0]
 dict1=dict(F.degree())  # node 0 has degree 1
@@ -1963,7 +2008,7 @@ print('-------')
 print('Densidad: ', nx.density(F))
 print('Diametro: ',nx.diameter(F))
 
-nx.draw_networkx(F)
+nx.draw_networkx(F, node_size=20, edge_color='gray', with_labels=False)
 
 
 d = {}
@@ -1991,6 +2036,15 @@ y = clustering_g.values()
 plt.scatter(x, y, alpha=0.5)
 plt.show()
 
+
+
+# Calcular centralidad de intermediación
+intermediacion = nx.betweenness_centrality(F)
+# Ordenar por centralidad descendente
+intermediacion_ordenada = sorted(intermediacion.items(), key=lambda x: x[1], reverse=True)
+print("Top 10 nodos por centralidad de intermediación:")
+for nodo, valor in intermediacion_ordenada[:10]:
+    print(f"Destino N: {nodo}, Centralidad: {valor:.4f}")
 
 
 import community.community_louvain as community_louvain
@@ -2050,34 +2104,6 @@ categorias_por_comunidad_2['porcentaje'] = categorias_por_comunidad_2.groupby('c
 categorias_por_comunidad_2.sort_values(['comunidad', 'conteo'], ascending=[True, False]).head(10)
 
 
-def agrupar_categorias_principales(df, comunidad, top_n=3):
-
-    # Filtrar el DataFrame para la comunidad especificada
-    grupo = df[df['comunidad'] == comunidad]
-    
-    # Obtener las N categorías principales por porcentaje
-    categorias_principales = grupo.nlargest(top_n, 'porcentaje')
-    
-    # Calcular los valores agregados para 'otros'
-    porcentaje_otros = grupo[~grupo.index.isin(categorias_principales.index)]['porcentaje'].sum()
-    conteo_otros = grupo[~grupo.index.isin(categorias_principales.index)]['conteo'].sum()
-    
-    # Convertir las categorías principales a registros
-    resultado = categorias_principales.to_dict('records')
-    
-    # Agregar la categoría 'otros' si es aplicable
-    if porcentaje_otros > 0:
-        resultado.append({
-            'comunidad': comunidad,
-            'category': 'otros',
-            'conteo': conteo_otros,
-            'porcentaje': porcentaje_otros
-        })
-    
-    # Convertir el resultado nuevamente a un DataFrame
-    return pd.DataFrame(resultado)
-
-
 df_aux = categorias_por_comunidad_2.sort_values(['comunidad', 'conteo'], ascending=[True, False])
 resultados = []
     
@@ -2103,12 +2129,47 @@ pivot_df.plot(
 )
 
 # Add labels, title, and legend
-ax.set_title("Distribution of Categories by Community", fontsize=20, pad=20, fontweight='bold')
-ax.set_xlabel("Community", fontsize=16)
-ax.set_ylabel("Percentage", fontsize=16)
-ax.legend(title="Category", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
+ax.set_title("Ditribución de categorias por comunidad", fontsize=20, pad=20, fontweight='bold')
+ax.set_xlabel("Comunidad", fontsize=16)
+ax.set_ylabel("Porcentaje", fontsize=16)
+ax.legend(title="Categoria", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
 plt.tight_layout()
 
 # Show the plot
 plt.show()
 
+
+# ## 6. Conclusiones, Trabajos futuros y Limitaciones
+# <div style="text-align: justify">
+# Inicialmente se analizó la red completa de usuarios y destinos turísticos. A esta se le agregaron las variables de latitud y longitud, para posteriormente categorizar cada uno de los lugares en categoría, tipo y subtipo. Esto nos permitió entender las preferencias de cada uno de los usuarios que realizan reseñas en Google Maps, con el fin de construir los cimientos de un sistema de recomendación de destinos turísticos basado en clases de usuarios.<br>
+# 
+# Los datos mostraron que la cantidad de reseñas por año iba en aumento hasta el año 2019, y en ese momento, debido a la pandemia, bajaron considerablemente (aproximadamente 50%) y no se han recuperado desde entonces. Luego se observa que los destinos turísticos con más reseñas corresponden a las categorías de restaurantes, atracciones turísticas y puntos de interés. Dentro de estas, el primer lugar lo ocupa *"La Cervecería" Kunstmann* (**19,239** reseñas), seguido de *"Encuentro costumbrista en la Costa Playa Grande"* (**15,349** reseñas) y *"Terminal de buses Valdivia"*(**6,956** reseñas), respectivamente. Es importante mencionar que, a pesar de ser los lugares más visitados, al tener tantas calificaciones, no es factible que tengan la calificación máxima. Este patrón llama la atención, ya que se necesita tener una visión amplia y no solo enfocarse en los lugares mejor evaluados, ya que el ranking de estos lugares, mejor evaluados, lo lideran puntos con pocas reseñas que los usuarios más activos no necesariamente recomiendan.
+# 
+# También existe un patrón claro en las calificaciones, las cuales tienen una fuerte centralidad alrededor de 4.5 estrellas. Esto da la impresión de que los usuarios solo evalúan cuando el lugar los hace sentir bien. Dicho de otra forma, los datos presentan un sesgo positivo. Este sesgo se puede observar nuevamente en las evaluaciones de los usuarios más fecundos, quienes tienden a evaluar por encima de la media.
+# 
+# Finalmente, al trabajar directamente sobre las redes, fue imposible notar algo de interés sobre las redes sin filtrar, ya que presentaban demasiada concentración de enlaces, ofuscando cualquier información que se podría obtener de ellas. Es por esto que, posteriormente, se crearon dos filtros para obtener insights sobre la red. Es importante agregar que, al ser una red tan densa, el poder de cómputo necesario para analizarla directamente crece de manera rápida, superando los límites del hardware a disposición.
+# 
+# El primer filtro aplicado correspondió a un subconjunto de los usuarios más activos y sus destinos de mayor interés, con el objetivo de encontrar los destinos más frecuentados y bien calificados por estos usuarios, que pudieran representar un perfil confiable para este sistema futuro de recomendación. Un punto importante de notar es que las clases de este filtro presentan un fenotipo similar entre ellas, esto puede ser indicativo de que estan separadas por factores de lugar más que de interes. </div>
+# 
+# En el segundo filtro se calculó la correlación entre los distintos nodos y se filtró en base al valor estimado de significancia. En este caso, las clases sí fueron separadas según sus intereses. Particularmente, se da que:
+# 
+# - La **primera** comunidad se compone por las categorías café, restaurante, atracción turística y otros. Esto puede interpretarse como que esta comunidad corresponde a usuarios con intereses en gastronomía.
+# 
+# - La **segunda** comunidad se compone por las categorías parque, restaurante, área de autocaravanas y otros. Esto puede interpretarse como que esta comunidad corresponde a usuarios con intereses en actividades al aire libre.
+# 
+# - La **tercera** comunidad se compone por las categorías punto de interés, centro comercial, universidad y otros. Esto puede interpretarse como que esta comunidad corresponde a usuarios con intereses en compras/infraestructura.
+# 
+# - La **cuarta** comunidad se compone por las categorías restaurante, spa, atracción turística y otros. Esto puede interpretarse como que esta comunidad corresponde a usuarios con intereses en turismo.
+# 
+# - La **quinta** comunidad se compone por las categorías característica natural, punto de interés, atracción turística y otros. Esto puede interpretarse como que esta comunidad corresponde a usuarios con intereses en naturaleza.
+# 
+# <div style="text-align: justify">
+# Un posible proyecto que nace directamente del trabajo ya realizado es una red de recomendaciones de actividades en base a los intereses personales y a la clasificación del usuario, permitiendo robustecer la red y generar un servicio al mismo tiempo. <br>
+# 
+# Cabe destacar que los resultados y análisis realizados se basan en los datos disponibles y en las suposiciones realizadas durante el proceso, por lo que las mismas conclusiones pueden no ser generalizables al agregar lugares en otras partes de Chile. Además, un punto no abordado en el desarrollo de este proyecto es la interacción que pueden tener los diferentes lugares relacionados a la ubicación geográfica y su cercanía con otros lugares, lo que podría influir en la elección de los usuarios al momento de visitar un lugar en particular.
+# 
+# 
+# </div>
+# 
+# 
+# 
