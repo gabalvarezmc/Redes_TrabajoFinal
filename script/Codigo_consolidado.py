@@ -1213,12 +1213,6 @@ plt.tight_layout()
 plt.show()
 
 
-# `Natural_feature"` y `"Tourist_attraction"` tienen calificaciones promedio cercanas a 5.0, por lo que vemos que  los destinos relacionados con naturaleza y turismo son muy valorados. **Podría estar relacionado con experiencias únicas que generan satisfacción.**
-# 
-# `"Store"`, `"Grocery_or_supermarket"`, y `"School"` tienen calificaciones promedio más bajas, lo que **podría deberse a que estas categorías no generan experiencias emocionales significativas**, ya que están más relacionadas con actividades cotidianas.
-# 
-# Las categorías relacionadas con ocio, naturaleza y turismo tienden a ser más valoradas que aquellas relacionadas con actividades funcionales o comerciales.
-
 # #### Tendencia en el tiempo.
 
 # Cantidad de visitas por año
@@ -1380,6 +1374,7 @@ pos = nx.bipartite_layout(subred, usuarios)
 
 # Diferenciar nodos por tipo (colores)
 node_colors = ['blue' if n in usuarios else 'orange' for n in subred.nodes()]
+
 
 # Visualización
 plt.figure(figsize=(14, 10))
@@ -1739,7 +1734,7 @@ categorias_por_comunidad = df_comunidades_merge.groupby(['comunidad', 'category'
 categorias_por_comunidad['porcentaje'] = categorias_por_comunidad.groupby('comunidad')['conteo'].transform(lambda x: (x / x.sum()) * 100)
 
 # Mostrar los resultados para las primeras comunidades
-print(categorias_por_comunidad.sort_values(['comunidad', 'conteo'], ascending=[True, False]).head(10))
+categorias_por_comunidad.sort_values(['comunidad', 'conteo'], ascending=[True, False]).head(10)
 
 
 # Calificaciones promedio por comunidad
@@ -2037,4 +2032,83 @@ plt.show()
 # Dentro de las comunidades se obsevan ciertos nodos que funcionan como purta central entre las comunidades. Se podria generar recomendaciones a usuarios de otras comunidades a estos nodos en particular para expandir el mercado
 
 
+
+
+# Asociar comunidades a usuarios
+df_comunidades_2 = pd.DataFrame({'N': list(partition.keys()), 'comunidad': list(partition.values())})
+
+# Unir datos de comunidad con el dataframe original
+df_comunidades_merge_2 = pd.merge(df_base, df_comunidades_2, on='N')
+
+# Categorías predominantes por comunidad
+categorias_por_comunidad_2 = df_comunidades_merge_2.groupby(['comunidad', 'category'])['place_name'].count().reset_index(name='conteo')
+
+# Calcular el porcentaje de visitas por categoría dentro de cada comunidad
+categorias_por_comunidad_2['porcentaje'] = categorias_por_comunidad_2.groupby('comunidad')['conteo'].transform(lambda x: (x / x.sum()) * 100)
+
+# Mostrar los resultados para las primeras comunidades
+categorias_por_comunidad_2.sort_values(['comunidad', 'conteo'], ascending=[True, False]).head(10)
+
+
+def agrupar_categorias_principales(df, comunidad, top_n=3):
+
+    # Filtrar el DataFrame para la comunidad especificada
+    grupo = df[df['comunidad'] == comunidad]
+    
+    # Obtener las N categorías principales por porcentaje
+    categorias_principales = grupo.nlargest(top_n, 'porcentaje')
+    
+    # Calcular los valores agregados para 'otros'
+    porcentaje_otros = grupo[~grupo.index.isin(categorias_principales.index)]['porcentaje'].sum()
+    conteo_otros = grupo[~grupo.index.isin(categorias_principales.index)]['conteo'].sum()
+    
+    # Convertir las categorías principales a registros
+    resultado = categorias_principales.to_dict('records')
+    
+    # Agregar la categoría 'otros' si es aplicable
+    if porcentaje_otros > 0:
+        resultado.append({
+            'comunidad': comunidad,
+            'category': 'otros',
+            'conteo': conteo_otros,
+            'porcentaje': porcentaje_otros
+        })
+    
+    # Convertir el resultado nuevamente a un DataFrame
+    return pd.DataFrame(resultado)
+
+
+df_aux = categorias_por_comunidad_2.sort_values(['comunidad', 'conteo'], ascending=[True, False])
+resultados = []
+    
+for i in range(5):
+    df_procesado = agrupar_categorias_principales(df_aux, i, 3)
+    resultados.append(df_procesado)
+    
+df_aux = pd.concat(resultados, ignore_index=True)
+
+
+# Pivot the data for stacked bar chart
+pivot_df = df_aux.pivot_table(index='comunidad', columns='category', values='porcentaje', fill_value=0)
+
+# Plot stacked bar chart
+fig, ax = plt.subplots(figsize=(16, 8))
+
+pivot_df.plot(
+    kind='bar',
+    stacked=True,
+    ax=ax,
+    colormap='Spectral',  # Choose a colormap for better differentiation
+    alpha=1
+)
+
+# Add labels, title, and legend
+ax.set_title("Distribution of Categories by Community", fontsize=20, pad=20, fontweight='bold')
+ax.set_xlabel("Community", fontsize=16)
+ax.set_ylabel("Percentage", fontsize=16)
+ax.legend(title="Category", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
+plt.tight_layout()
+
+# Show the plot
+plt.show()
 
