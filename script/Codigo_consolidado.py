@@ -1873,6 +1873,8 @@ for pval in [0.1, 0.5, 0.8]:
     ax2.axvline(pval, ls='--', color='k')
 
 ax2.set_yscale('log')
+ax1.set_title("Numero de nodos segun corte en pval")
+ax2.set_title("Numero de aristas segun corte en pval")
 ax1.grid()
 ax2.grid()
 
@@ -2014,7 +2016,6 @@ print(community_sizes)
 
 
 plt.figure(figsize=(20, 10))
-#https://datoslab.cl/hes/
 
 partition = community_louvain.best_partition(F)
 
@@ -2031,4 +2032,9 @@ for com in set(partition.values()): #para cada comunidad
     count = count + 1# para iterar sobre los colores
 nx.draw_networkx_edges(F, pos, alpha=0.2)#plotea enlaces
 plt.show()
+
+
+# Dentro de las comunidades se obsevan ciertos nodos que funcionan como purta central entre las comunidades. Se podria generar recomendaciones a usuarios de otras comunidades a estos nodos en particular para expandir el mercado
+
+
 
